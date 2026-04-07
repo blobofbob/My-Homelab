@@ -137,6 +137,7 @@ sudo systemctl restart apache2
 ```
 
 `a2enmod rewrite` allows you to change ugly URLs (`/index.php?id=5`) into clean ones (`/articles/my-post`) and `a2enmod ssl` allows the server to handle encrypted connections.
+if you would like to have a domain name, you will have to purchase it
 
 ### Virtual Hosts *(Optional — I have not done it, but it sounds cool)*
 
@@ -300,9 +301,6 @@ Tor generates your `.onion` address automatically. Retrieve it with:
 ```bash
 sudo cat /var/lib/tor/hidden_service/hostname
 ```
-
-Your address: `male3e4xwgo4swc7awciiw2vrqsok26uz3ywucte5kcvrcxsluob7kyd.onion`
-
 You can also install OnionShare for a simpler way to share files over Tor:
 
 ```bash
