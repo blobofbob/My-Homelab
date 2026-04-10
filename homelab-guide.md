@@ -194,6 +194,37 @@ Certbot installs a systemd timer to handle renewals automatically. Test it with:
 ```bash
 sudo certbot renew --dry-run
 ```
+### Getting Google to Index Your Site
+
+To appear in Google search results, you need to submit your site to Google Search Console and verify that you own the domain. The standard way to do this is via a DNS TXT record.
+
+Step 1 — Add your site to Google Search Console
+
+Go to search.google.com/search-console and add your domain. Select the DNS verification method. Google will give you a unique token in the form `google-site-verification=xxxxx` — copy it and keep the window open.
+
+Step 2 — Add the TXT record in your registrar's DNS panel
+
+Log in to your registrar and navigate to the DNS management section for your domain. Add a new record with the following values:
+
+Field
+Value
+Name / Host
+`@` or your domain name (varies by registrar)
+TTL
+`900`
+Type
+`TXT`
+Value
+Paste your `google-site-verification=xxxxx` token here
+
+
+Save the record. The exact labels and steps differ between registrars, but every DNS panel exposes these same four fields.
+
+Step 3 — Wait and confirm
+
+DNS propagation can take 1–24 hours. Once done, go back to Google Search Console and click Verify. After verification, submit your sitemap if you have one — this helps Google discover and index your pages faster.
+
+---
 
 Full guide at [5].
 
