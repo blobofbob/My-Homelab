@@ -8,8 +8,8 @@ A complete walkthrough for setting up Pi-hole, Tailscale VPN, an Apache web serv
 
 Before installing anything, make sure your Pi is fully up to date:
 
-```bash
-sudo apt update && sudo apt upgrade
+```bash  
+sudo apt update && sudo apt upgrade  
 ```
 
 The `&&` ensures the second command only runs if the first succeeds. Follow any prompts that appear during the upgrade.
@@ -24,18 +24,18 @@ I recommend setting up SSH for a more comfortable experience.
 
 Run the one-line installer:
 
-```bash
-sudo curl -sSL https://install.pi-hole.net | bash
+```bash  
+sudo curl -sSL https://install.pi-hole.net | bash  
 ```
 
 The installer will walk you through a series of prompts:
 
-- **Network interface** — select your active interface (usually `eth0` for wired, `wlan0` for Wi-Fi — I highly recommend using ethernet rather than Wi-Fi).
-- **Upstream DNS provider** — this is the DNS server Pi-hole itself uses to resolve queries (e.g. Cloudflare `1.1.1.1`, Google `8.8.8.8`, or Quad9 `9.9.9.9`). You can change this later.
-- **Block lists** — the default StevenBlack list is really good; you can add more afterwards.
-- **Web admin interface** — select On.
-- **Web server** — select On.
-- **Log queries** — recommended, useful for debugging.
+- **Network interface** — select your active interface (usually `eth0` for wired, `wlan0` for Wi-Fi — I highly recommend using ethernet rather than Wi-Fi).  
+- **Upstream DNS provider** — this is the DNS server Pi-hole itself uses to resolve queries (e.g. Cloudflare `1.1.1.1`, Google `8.8.8.8`, or Quad9 `9.9.9.9`). You can change this later.  
+- **Block lists** — the default StevenBlack list is really good; you can add more afterwards.  
+- **Web admin interface** — select On.  
+- **Web server** — select On.  
+- **Log queries** — recommended, useful for debugging.  
 - **Privacy level** — level 0 logs everything; increase if you want less detail stored.
 
 At the end of installation, Pi-hole will display a generated admin password — **save this**.
@@ -44,7 +44,7 @@ At the end of installation, Pi-hole will display a generated admin password — 
 
 Once installed, the admin dashboard is available at:
 
-- `http://192.168.1.223/admin` *(replace with your Pi's actual local IP)*
+- `http://192.168.1.223/admin` *(replace with your Pi's actual local IP)*  
 - `http://pi.hole/admin`
 
 ### Pointing Devices to Pi-hole
@@ -55,8 +55,8 @@ The best way of doing so is to set your router's DNS server to your Pi's local I
 
 After logging into the admin panel, go to **Adlists** under the Group Management menu. Paste in blocklist URLs and then run:
 
-```bash
-pihole -g
+```bash  
+pihole -g  
 ```
 
 This pulls down and processes the lists. I have included a set of blocklists at [2].
@@ -67,103 +67,161 @@ By default, Pi-hole listens on ports 80 and 443 — the same ports that my Apach
 
 **Option 1 — CLI (recommended):**
 
-```bash
-sudo pihole-FTL --config webserver.port "8080o,8443os,[::]:8080o,[::]:8443os"
+```bash  
+sudo pihole-FTL --config webserver.port "8080o,8443os,[::]:8080o,[::]:8443os"  
 ```
 
 **Option 2 — Edit the config file directly:**
 
 Open `/etc/pihole/pihole.toml`, find the `[webserver]` section, and update it:
 
-```toml
-[webserver]
-  port = "8080o,8443os,[::]:8080o,[::]:8443os"
+```toml  
+[webserver]  
+  port \= "8080o,8443os,[::]:8080o,[::]:8443os"  
 ```
 
 **Port syntax notes:**
 
-- The `o` suffix means "optional" — Pi-hole won't error if that port can't be bound.
-- The `s` suffix marks a port as TLS/SSL.
+- The `o` suffix means "optional" — Pi-hole won't error if that port can't be bound.  
+- The `s` suffix marks a port as TLS/SSL.  
 - Setting the value to an empty string disables the web server and API entirely.
 
 After making changes, restart Pi-hole's FTL service:
 
-```bash
-sudo systemctl restart pihole-FTL
+```bash  
+sudo systemctl restart pihole-FTL  
 ```
 
-The admin panel will now be at `http://<your-pi-hole-ip>:8080/admin`.
+The admin panel will now be at `http://\<your-pi-hole-ip>:8080/admin`.
 
 ---
 
 ## 3. Apache Web Server
 
-### Installation
+### Installation [3][4]
 
-```bash
-sudo apt install apache2 -y
+```bash  
+sudo apt install apache2 -y  
 ```
 
 Apache should start automatically. You can verify its status with:
 
-```bash
-sudo systemctl status apache2
+```bash  
+sudo systemctl status apache2  
 ```
 
 And control it with:
 
-```bash
-sudo systemctl start apache2
-sudo systemctl stop apache2
-sudo systemctl restart apache2
+```bash  
+sudo systemctl start apache2  
+sudo systemctl stop apache2  
+sudo systemctl restart apache2  
 ```
 
 ### Serving a Web Page
 
 Your site's files live in `/var/www/html/`. The default page is `index.html` — replace or edit it to serve your own content:
 
-```bash
-sudo nano /var/www/html/index.html
+```bash  
+sudo nano /var/www/html/index.html  
 ```
 
 To verify everything is working, open a browser and navigate to your Pi's local IP address — you should see your page.
 
 ### Enabling Required Modules
 
-```bash
-sudo a2enmod rewrite
-sudo a2enmod ssl
-sudo systemctl restart apache2
+```bash  
+sudo a2enmod rewrite  
+sudo a2enmod ssl  
+sudo systemctl restart apache2  
 ```
 
 `a2enmod rewrite` allows you to change ugly URLs (`/index.php?id=5`) into clean ones (`/articles/my-post`) and `a2enmod ssl` allows the server to handle encrypted connections.
-if you would like to have a domain name, you will have to purchase it
+
+If you would like to have a domain name, you will have to purchase it at an ICANN accredited registrar and then configure the site so that it points the domain name to your public IP address. Please get one as certbot needs a domain name in order to give you a certificate
+
+### Obtaining a Domain Name
+
+**Step 1 — Buy a domain from a registrar**
+
+Purchase a domain from any ICANN-accredited registrar. A few common options:
+
+- **amen.fr** — French registrar, straightforward DNS management panel  
+- **OVH** — popular in Europe, competitive pricing  
+- **Namecheap** — widely used, includes free WHOIS privacy  
+- **Gandi** — privacy-focused, WHOIS privacy included by default
+
+Pick a `.com`, `.net`, or country-code TLD (e.g. `.fr`) — they all work equally well for this purpose.
+
+**Step 2 — Find your public IP address**
+
+```bash  
+curl ifconfig.me  
+```
+
+> **Note on dynamic IPs:** Most home internet connections have a dynamic public IP that can change without warning, which would break your domain. Either ask your ISP for a static IP, or use a dynamic DNS (DDNS) service such as DuckDNS or No-IP that automatically updates your domain's A record when your IP changes.
+
+**Step 3 — Point the domain to your Pi**
+
+In your registrar's DNS panel, add an **A record** pointing your domain to your public IP:
+
+| Field | Value |
+|---|---|
+| **Name / Host** | `@` (or your domain name, depending on the registrar) |
+| **Type** | `A` |
+| **Value** | Your public IP address |
+| **TTL** | `3600` (or default) |
+
+**Step 4 — Forward port 80 on your router**
+
+Certbot needs to reach your Pi over the internet on port 80 to issue a certificate. In your router's admin panel, add a port forwarding rule:
+
+- **External port:** 80  
+- **Internal IP:** your Pi's local IP  
+- **Internal port:** 80
+
+You can find your Pi's local IP with `hostname -I`. Once done, DNS propagation takes up to 24 hours — after that you're ready to run Certbot.
 
 ### Virtual Hosts *(Optional — I have not done it, but it sounds cool)*
 
 If you want to serve multiple sites, create a config file for each in `/etc/apache2/sites-available/`:
 
-```bash
-sudo nano /etc/apache2/sites-available/mysite.conf
+```bash  
+sudo nano /etc/apache2/sites-available/mysite.conf  
 ```
 
-```apache
-<VirtualHost *:80>
-    ServerName mysite.local
-    DocumentRoot /var/www/mysite
-    ErrorLog ${APACHE_LOG_DIR}/mysite_error.log
-    CustomLog ${APACHE_LOG_DIR}/mysite_access.log combined
-</VirtualHost>
+```apache  
+\<VirtualHost *:80>  
+    ServerName mysite.local  
+    DocumentRoot /var/www/mysite  
+    ErrorLog ${APACHE_LOG_DIR}/mysite_error.log  
+    CustomLog ${APACHE_LOG_DIR}/mysite_access.log combined  
+\</VirtualHost>  
 ```
 
 Enable it and reload:
 
-```bash
-sudo a2ensite mysite.conf
-sudo systemctl reload apache2
+```bash  
+sudo a2ensite mysite.conf  
+sudo systemctl reload apache2  
 ```
 
-Full setup walkthrough at [3] and [4].
+### Troubleshooting — AH00558: Could not reliably determine the server's fully qualified domain name [24]
+
+This warning appears on first start when Apache has no global `ServerName` directive configured. It does not prevent Apache from running, but it is worth fixing to keep logs clean. Add one line to the end of `/etc/apache2/apache2.conf`:
+
+```bash  
+echo "ServerName 127.0.0.1" | sudo tee -a /etc/apache2/apache2.conf  
+```
+
+Then verify the config is valid and reload:
+
+```bash  
+sudo apachectl configtest  
+sudo systemctl reload apache2  
+```
+
+`apachectl configtest` should now print `Syntax OK` with no AH00558 message.
 
 ---
 
@@ -173,16 +231,16 @@ To serve your site over HTTPS, use Certbot to obtain a free certificate from Let
 
 ### Installation
 
-```bash
-sudo apt install certbot python3-certbot-apache -y
+```bash  
+sudo apt install certbot python3-certbot-apache -y  
 ```
 
-### Obtaining a Certificate
+### Obtaining a Certificate [5]
 
 Your Pi needs to be reachable from the internet on port 80 for this step — make sure your router is forwarding port 80 to your Pi's local IP.
 
-```bash
-sudo certbot --apache
+```bash  
+sudo certbot --apache  
 ```
 
 Certbot will ask for an email address (for renewal reminders) and whether to redirect HTTP to HTTPS — choose redirect.
@@ -191,11 +249,34 @@ Certbot will ask for an email address (for renewal reminders) and whether to red
 
 Certbot installs a systemd timer to handle renewals automatically. Test it with:
 
-```bash
-sudo certbot renew --dry-run
+```bash  
+sudo certbot renew --dry-run  
 ```
 
-Full guide at [5].
+### Getting Google to Index Your Site
+
+To appear in Google search results, you need to submit your site to **Google Search Console** and verify that you own the domain. The standard way to do this is via a DNS TXT record.
+
+**Step 1 — Add your site to Google Search Console**
+
+Go to [search.google.com/search-console](https://search.google.com/search-console) and add your domain. Select the **DNS verification** method. Google will give you a unique token in the form `google-site-verification=xxxxx` — copy it and keep the window open.
+
+**Step 2 — Add the TXT record in your registrar's DNS panel**
+
+Log in to your registrar and navigate to the DNS management section for your domain. Add a new record with the following values:
+
+| Field | Value |
+|---|---|
+| **Name / Host** | `@` or your domain name (varies by registrar) |
+| **TTL** | `900` |
+| **Type** | `TXT` |
+| **Value** | Paste your `google-site-verification=xxxxx` token here |
+
+Save the record. The exact labels and steps differ between registrars, but every DNS panel exposes these same four fields.
+
+**Step 3 — Wait and confirm**
+
+DNS propagation can take 1–24 hours. Once done, go back to Google Search Console and click **Verify**. After verification, submit your sitemap if you have one — this helps Google discover and index your pages faster.
 
 ---
 
@@ -207,14 +288,14 @@ Tailscale creates an encrypted mesh network between all your devices, letting yo
 
 Run the official installer [6]:
 
-```bash
-curl -fsSL https://tailscale.com/install.sh | sh
+```bash  
+curl -fsSL https://tailscale.com/install.sh | sh  
 ```
 
 Then bring Tailscale up and authenticate:
 
-```bash
-sudo tailscale up
+```bash  
+sudo tailscale up  
 ```
 
 This prints a URL — open it in a browser to log in and authorise the device. Your Pi will then appear in the Tailscale admin panel at `login.tailscale.com/admin/machines`.
@@ -223,14 +304,14 @@ This prints a URL — open it in a browser to log in and authorise the device. Y
 
 Enable Tailscale's built-in SSH so you can reach your Pi from anywhere on your tailnet without managing SSH keys:
 
-```bash
-sudo tailscale up --ssh
+```bash  
+sudo tailscale up --ssh  
 ```
 
 From any other Tailscale-connected device you can then:
 
-```bash
-ssh pi@<tailscale-ip-of-pi>
+```bash  
+ssh pi@\<tailscale-ip-of-pi>  
 ```
 
 The Pi's Tailscale IP is shown in the admin panel [7].
@@ -243,16 +324,16 @@ This routes all traffic from your other devices through your Pi when away from h
 
 First, enable IP forwarding on the Pi:
 
-```bash
-echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
-echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p /etc/sysctl.conf
+```bash  
+echo 'net.ipv4.ip_forward \= 1' | sudo tee -a /etc/sysctl.conf  
+echo 'net.ipv6.conf.all.forwarding \= 1' | sudo tee -a /etc/sysctl.conf  
+sudo sysctl -p /etc/sysctl.conf  
 ```
 
 Then advertise the Pi as an exit node:
 
-```bash
-sudo tailscale up --advertise-exit-node
+```bash  
+sudo tailscale up --advertise-exit-node  
 ```
 
 Finally, go to the Tailscale admin panel, find the Pi under **Machines**, click the three-dot menu, and enable **Use as exit node**. Full guide at [8].
@@ -265,8 +346,8 @@ In the Tailscale admin panel, navigate to **DNS** and set your Pi's Tailscale IP
 
 Tailscale Serve lets you expose a local service to other devices on your tailnet without opening any ports to the internet:
 
-```bash
-tailscale serve https / http://localhost:80
+```bash  
+tailscale serve https / http://localhost:80  
 ```
 
 This proxies HTTPS requests on your tailnet directly to Apache running locally. Full documentation at [10].
@@ -277,93 +358,203 @@ This proxies HTTPS requests on your tailnet directly to Apache running locally. 
 
 ### Install Tor
 
-```bash
-sudo apt install tor -y
+```bash  
+sudo apt install tor -y  
 ```
 
 ### Onion Service
 
 To expose your web server as a `.onion` site, add the following to `/etc/tor/torrc`:
 
-```
-HiddenServiceDir /var/lib/tor/hidden_service/
-HiddenServicePort 80 127.0.0.1:80
+```  
+HiddenServiceDir /var/lib/tor/hidden_service/  
+HiddenServicePort 80 127.0.0.1:80  
 ```
 
 Restart Tor:
 
-```bash
-sudo systemctl restart tor
+```bash  
+sudo systemctl restart tor  
 ```
 
 Tor generates your `.onion` address automatically. Retrieve it with:
 
-```bash
-sudo cat /var/lib/tor/hidden_service/hostname
-```
+```bash  
+sudo cat /var/lib/tor/hidden_service/hostname  
+```  
 You can also install OnionShare for a simpler way to share files over Tor:
 
-```bash
-sudo apt install onionshare -y
+```bash  
+sudo apt install onionshare -y  
 ```
 
 ### Tor Relay
 
 Running a relay contributes bandwidth to the Tor network. First, add the official Tor Project repository to get the latest version [11]:
 
-```bash
+```bash  
 sudo apt install apt-transport-https -y
 
-# Add the signing key
-wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc \
-  | gpg --dearmor \
+# Add the signing key  
+wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc \\  
+  | gpg --dearmor \\  
   | sudo tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
 
-# Add the repository
-echo "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] \
-  https://deb.torproject.org/torproject.org bullseye main" \
+# Add the repository  
+echo "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] \\  
+  https://deb.torproject.org/torproject.org bullseye main" \\  
   | sudo tee /etc/apt/sources.list.d/tor.list
 
-sudo apt update && sudo apt install tor deb.torproject.org-keyring -y
+sudo apt update && sudo apt install tor deb.torproject.org-keyring -y  
 ```
 
 Edit `/etc/tor/torrc` and add your relay configuration:
 
-```
-Nickname      MyRelay          # Choose a unique name
-ContactInfo   you@example.com
-ORPort        9001             # 9001 keeps port 443 free for Apache HTTPS
-ExitRelay     0                # 0 = middle/guard relay only (recommended)
-RelayBandwidthRate  1 MBytes
-RelayBandwidthBurst 2 MBytes
+```  
+Nickname      MyRelay          # Choose a unique name  
+ContactInfo   you@example.com  
+ORPort        9001             # 9001 keeps port 443 free for Apache HTTPS  
+ExitRelay     0                # 0 \= middle/guard relay only (recommended)  
+RelayBandwidthRate  1 MBytes  
+RelayBandwidthBurst 2 MBytes  
 ```
 
 > **Port note:** Using `ORPort 9001` keeps port 443 available for Apache's HTTPS traffic.
 
 Restart Tor and verify it's running:
 
-```bash
-sudo systemctl restart tor
-sudo systemctl status tor
+```bash  
+sudo systemctl restart tor  
+sudo systemctl status tor  
 ```
 
 After a few hours, check that your relay has registered with the network by searching your nickname at https://metrics.torproject.org/rs.html. Post-install tips available at [12].
 
 ---
 
+## 7. Minecraft Server
+
+### Prerequisites
+
+Before setting up the server, make sure your Pi is running a **64-bit version of Raspberry Pi OS** and is fully up to date (see section 1). Then install Java and gdebi:
+
+```bash  
+sudo apt update && sudo apt upgrade  
+sudo apt install default-jdk gdebi -y  
+```
+
+### Vanilla Server
+
+Download the server JAR from the official Minecraft site [13] — do not unzip it. Place it in a dedicated folder, then start the server with one of the following commands depending on how much RAM your Pi has:
+
+```bash  
+# For a Pi with 2 GB RAM  
+java -Xmx1024M -Xms1024M -jar minecraft_server.1.21.11.jar nogui
+
+# For a Pi with 4 GB RAM  
+java -Xmx2048M -Xms2048M -jar minecraft_server.1.21.11.jar nogui  
+```
+
+Append `&` to either command to run the server as a background process. Follow the same pattern for other RAM sizes — the values are in megabytes.
+
+### Network Setup
+
+Once the server is running locally, expose it to the internet:
+
+- Set a **static local IP** for your Pi in your router's DHCP settings — this prevents the Pi's local address from changing and breaking your port forward.  
+- Optionally turn off Wi-Fi and run on ethernet only [14].  
+- **Forward port 25565** (TCP and UDP) from your router to the Pi's local IP using NAT/PAT.  
+- Optionally place the Pi in the **DMZ** if you want all ports forwarded without individual rules.
+
+To connect before the above steps, use the Pi's local IP. After, use your **public IP** and port 25565. Your public IP may change — check it before assuming the server is broken.
+
+To monitor running processes on the Pi:
+
+```bash  
+htop  
+```
+
+Use `Ctrl+C` to stop the server.
+
+### PaperMC [15]
+
+PaperMC is a high-performance fork of the Minecraft server with better plugin support and optimisations. Follow the install guide at [15], then start the server with:
+
+```bash  
+java -Xms5G -Xmx5G -jar server.jar --nogui  
+```
+
+Type `stop` in the server console to shut it down cleanly. To update, download the latest build from [18] and follow the update guide [16]. Further configuration tips are at [17].
+
+### Bedrock Compatibility
+
+To allow Bedrock edition clients (mobile, console, Windows) to join your Java server, install the Geyser and Floodgate plugins. Download both into your server's `plugins/` directory:
+
+- **Geyser** [19] — translates the Bedrock protocol to Java  
+- **Floodgate** [20] — allows Bedrock players to join without a Java account
+
+Note that the downloaded files will not have a `.jar` extension — rename them with `mv` accordingly, then restart the server.
+
+### Keeping the Server Running
+
+Use `tmux` to keep the server alive after you close your SSH session:
+
+```bash  
+tmux new -s minecraft  
+```
+
+Start the server inside the tmux session. To detach and leave it running in the background, press `Ctrl+B` then `D`. To reattach later:
+
+```bash  
+tmux attach -t minecraft  
+```
+
+### Security [21]
+
+Running a publicly accessible server increases your exposure. Follow the Raspberry Pi security hardening guide [21] — at minimum, disable password SSH login in favour of key-based auth and keep the system updated regularly.
+
+---
+
+## 8. Flipper Zero
+
+The Flipper Zero is a portable multi-tool for hardware hacking and RF exploration. Follow the setup video [22] to get started.
+
+### Firmware
+
+The stock firmware is functional but limited. **Momentum** is a community firmware that unlocks additional features while staying stable. Install it via the update link [23].
+
+```bash  
+# Flash via the Flipper Zero CLI or the qFlipper desktop app  
+# — see the Momentum update page for exact steps  
+```
+
+---
+
 ## Sources
 
-| # | URL |
-|---|-----|
-| [1] | https://discourse.pi-hole.net/t/how-do-i-configure-my-devices-to-use-pi-hole-as-their-dns-server/245 |
-| [2] | https://burstbytes.com.au/best-2026-pi-hole-blocklists-and-how-to-install-them/ |
-| [3] | https://www.tomshardware.com/news/raspberry-pi-web-server,40174.html |
-| [4] | https://www.sunfounder.com/blogs/news/raspberry-pi-apache-server-setup-step-by-step-installation-and-configuration |
-| [5] | https://pimylifeup.com/raspberry-pi-ssl-lets-encrypt/ |
-| [6] | https://tailscale.com/download/linux/rpi-bullseye |
-| [7] | https://tailscale.com/learn/how-to-ssh-into-a-raspberry-pi#enabling-tailscale-ssh-access |
-| [8] | https://tailscale.com/kb/1103/exit-nodes?tab=linux |
-| [9] | https://tailscale.com/kb/1114/pi-hole |
-| [10] | https://tailscale.com/docs/features/tailscale-serve |
-| [11] | https://community.torproject.org/relay/setup/guard/debian-ubuntu/ |
-| [12] | https://community.torproject.org/relay/setup/post-install/ |
+| # | URL |  
+|---|-----|  
+| [1] | https://discourse.pi-hole.net/t/how-do-i-configure-my-devices-to-use-pi-hole-as-their-dns-server/245 |  
+| [2] | https://burstbytes.com.au/best-2026-pi-hole-blocklists-and-how-to-install-them/ |  
+| [3] | https://www.tomshardware.com/news/raspberry-pi-web-server,40174.html |  
+| [4] | https://www.sunfounder.com/blogs/news/raspberry-pi-apache-server-setup-step-by-step-installation-and-configuration |  
+| [5] | https://pimylifeup.com/raspberry-pi-ssl-lets-encrypt/ |  
+| [6] | https://tailscale.com/download/linux/rpi-bullseye |  
+| [7] | https://tailscale.com/learn/how-to-ssh-into-a-raspberry-pi#enabling-tailscale-ssh-access |  
+| [8] | https://tailscale.com/kb/1103/exit-nodes?tab=linux |  
+| [9] | https://tailscale.com/kb/1114/pi-hole |  
+| [10] | https://tailscale.com/docs/features/tailscale-serve |  
+| [11] | https://community.torproject.org/relay/setup/guard/debian-ubuntu/ |  
+| [12] | https://community.torproject.org/relay/setup/post-install/ |  
+| [13] | https://www.minecraft.net/en-us/download/server |  
+| [14] | https://forums.raspberrypi.com/viewtopic.php?t=342095 |  
+| [15] | https://raspberrytips.com/minecraft-server-raspberry-pi/ |  
+| [16] | https://docs.papermc.io/paper/updating/ |  
+| [17] | https://docs.papermc.io/paper/next-steps/ |  
+| [18] | https://papermc.io/downloads/ |  
+| [19] | https://geysermc.org/download?project=geyser |  
+| [20] | https://geysermc.org/download/?project=floodgate |  
+| [21] | https://raspberrypi-guide.github.io/other/Improve-raspberry-pi-security |  
+| [22] | https://www.youtube.com/watch?v=aFXV-lt-CL4 |  
+| [23] | https://momentum-fw.dev/update?version=42630e91 |  
+| [24] | https://www.digitalocean.com/community/tutorials/apache-configuration-error-ah00558-could-not-reliably-determine-the-server-s-fully-qualified-domain-name |
