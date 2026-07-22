@@ -1,6 +1,6 @@
 # 07 — Flipper Zero
 
-The Flipper Zero is a portable multi-tool for hardware hacking and radio protocols — Sub-GHz, NFC, RFID, infrared, iButton, and BadUSB in one device. This guide covers replacing the stock firmware with Momentum, a community firmware that adds a significantly larger set of features and apps while keeping the same stable base. The Flipper is not connected to the Pi, but it is documented here as part of the wider homelab setup.
+The Flipper Zero is a portable multi-tool for hardware hacking and radio protocols — Sub-GHz, NFC, RFID, infrared, iButton, and BadUSB in one device. This guide covers replacing the stock firmware with Momentum, a community firmware that adds a significantly larger set of features and apps. The Flipper is not connected to the Pi, but it is documented here as part of the wider homelab setup.
 
 ---
 
@@ -20,7 +20,7 @@ The official firmware is conservative by design — it ships with regional restr
 
 ## Installing Momentum
 
-The Web Updater is the simplest install method.
+The Web Updater is the simplest install method and requires no file downloads.
 
 **1 —** Connect your Flipper Zero to your computer via USB.
 
@@ -30,7 +30,7 @@ The Web Updater is the simplest install method.
 
 **4 —** Choose a channel — **Release** for stability, **Dev** for the latest features. Release is the right choice for most people.
 
-**5 —** Click **Install** and wait for the update to complete. Do not disconnect the Flipper during this process.
+**5 —** Click **Flash** and wait for the update to complete. Do not disconnect the Flipper during this process.
 
 The Flipper will reboot into Momentum when the flash is done.
 
@@ -38,13 +38,11 @@ The Flipper will reboot into Momentum when the flash is done.
 
 ## After installing
 
-**Flipper Lab for apps:** After installing Momentum, the official Flipper mobile app will no longer work for installing applications, however, you can still remote control the flipper using the app. Use Flipper Lab at `https://lab.flipper.net` in Chrome instead — it connects via USB and lets you browse and install the full app catalogue.
+**Flipper Lab for apps:** After installing Momentum, the official Flipper mobile app will no longer work for installing applications. Use Flipper Lab at `https://lab.flipper.net` in Chrome instead — it connects via USB and lets you browse and install the full app catalogue.
 
 **Asset Packs:** Momentum includes a theming system that lets you change the Flipper's animations, icons, and fonts. Packs can be downloaded from the Momentum website or community Discord and uploaded to `SD/asset_packs/` via the File Manager tab in qFlipper. To apply a pack, press the Up arrow on the Flipper home screen, go to **Momentum Settings → Interface → Graphics → Asset Pack**.
 
 **Updating:** Check `https://momentum-fw.dev` for new releases. To update, repeat the Web Updater process — your SD card data is preserved.
-
-**Backups** You can back up your flipper on a laptop/PC using the Qflipper app
 
 ---
 

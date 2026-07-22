@@ -11,7 +11,7 @@ Docker runs OpenClaw, n8n, and Vaultwarden as isolated containers. This guide in
 Debian's default repositories include some Docker-related packages under different names. Remove them before adding Docker's own repo to avoid conflicts: [25]
 
 ```bash
-for pkg in docker.io docker-doc docker-compose podman-docker; do
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
   sudo apt-get purge $pkg
 done
 ```
@@ -47,8 +47,6 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
-
-`$VERSION_CODENAME` is read from `/etc/os-release` — this keeps the command correct across Debian releases without hardcoding a codename.
 
 ---
 
@@ -89,27 +87,11 @@ This should work without `sudo` now.
 
 ---
 
-## Docker Compose
-
-Docker Compose is included as a plugin — there is no separate binary to install. Use `docker compose` (with a space, not a hyphen):
-
-```bash
-docker compose version
-```
-
-The old standalone `docker-compose` binary is version 1 and no longer maintained. Every guide in this series uses `docker compose`.
-
----
-
 ## Docker and the firewall
 
 Docker manages its own iptables chains for container networking, independently of UFW. When a container stack starts, Docker inserts `DOCKER-USER` and `DOCKER-FORWARD` into the kernel's `FORWARD` chain, ahead of UFW's own rules.
 
-> ** ⚠ Always restart running containers after enabling or reloading UFW.** On my system, a UFW enable/reload left Docker's per-container forwarding rules stale even though they still looked correct in `iptables -L DOCKER-FORWARD`. A full restart forces Docker to re-register its rules against the current firewall state and fixes it immediately:
-> ```bash
-> docker compose -f ~/ai-stack/docker-compose.yml restart
-> docker compose -f ~/vaultwarden/docker-compose.yml restart
-> ```
+> ** Always restart running containers after enabling or reloading UFW.** On my system, a UFW enable/reload left Docker's per-container forwarding rules stale even though they still looked correct in `iptables -L DOCKER-FORWARD`. A full restart forces Docker to re-register its rules against the current firewall state and fixes it immediately.
 
 `iptables-persistent` must never be installed alongside UFW — the two manage iptables independently, and installing it has been confirmed to remove UFW's own rules.
 
@@ -175,6 +157,6 @@ sudo journalctl -u docker -n 30
 
 ---
 
-**Next:** [09 — UFW](09-ufw.md)
+**Next:** [11 — UFW](11-ufw.md)
 
 **Sources:** [25]

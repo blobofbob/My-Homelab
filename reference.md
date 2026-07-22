@@ -1,11 +1,11 @@
 # Reference — Raspberry Pi Homelab
-
+ 
 Quick-access tables for every guide. All port numbers, file paths, and sources live here so each guide can cross-reference this page rather than define them independently.
-
+ 
 ---
-
+ 
 ## Hardware
-
+ 
 | Component | Specification |
 |---|---|
 | Board | Raspberry Pi 4 Model B |
@@ -13,23 +13,21 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | Storage | ~29 GB SD card (that comes with the starter kit) |
 | OS | Debian 13 Trixie (64-bit) |
 | Network | Ethernet only — Wi-Fi disabled via rfkill |
-| Local subnet | `192.168.11.0/24` |
 | Tailscale IP | `100.101.7.56` |
 | MagicDNS hostname | `raspberrypi.tail7aae4f.ts.net` |
 | .onion address | `male3e4xwgo4swc7awciiw2vrqsok26uz3ywucte5kcvrcxsluob7kyd.onion` |
-
+ 
 > The Tailscale IP and MagicDNS hostname are assigned by Tailscale and specific to this machine. If you are following these guides on your own Pi, substitute your own values wherever `100.101.7.56` and `raspberrypi.tail7aae4f.ts.net` appear.
-
+ 
 ---
-
+ 
 ## Active services
-
+ 
 | Service | What it does |
 |---|---|
 | Pi-hole | Network-wide ad blocker and DNS server — covers both the local network and the tailnet |
 | Apache | Public web server, serves my website at gabriel.fortin-cara.org |
-| Certbot | Manages TLS certificates for Apache via Let's Encrypt, with automatic renewal |
-| Tailscale | Encrypted mesh VPN; provides SSH into my pi, Tailscale Serve (reverse proxy), and MagicDNS |
+| Tailscale | Encrypted mesh VPN; provides SSH into my Pi, Tailscale Serve (reverse proxy), and MagicDNS |
 | Tor relay | Contributes bandwidth to the Tor anonymity network |
 | Tor hidden service | .onion mirror of my website, served by Apache via torrc |
 | Docker | Container for OpenClaw, n8n, and Vaultwarden |
@@ -37,13 +35,13 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | OpenClaw | AI agent framework (Google Gemma 4 31B primary, Groq backup) |
 | n8n | Workflow automation engine, integrated with OpenClaw |
 | Vaultwarden | Self-hosted password manager |
-
+ 
 ---
-
+ 
 ## Port map
-
+ 
 ### Public — reachable from the internet
-
+ 
 | Port | Protocol | Service |
 |---|---|---|
 | 80 | TCP | Apache HTTP |
@@ -52,39 +50,38 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | 25565 | TCP | Minecraft Java *(optional — only when server is running ,also reachable on the local network)* |
 | 19132 | UDP | Minecraft Bedrock *(optional)* |
 | 19133 | UDP | Minecraft Bedrock *(optional)* |
-
+ 
 ### Local network only
-
+ 
 | Port | Protocol | Service | Restriction |
 |---|---|---|---|
 | 53 | TCP/UDP | Pi-hole DNS | `192.168.11.0/24` only |
-| 8080 | TCP | Pi-hole web admin (HTTP) | Accessible via Tailscale IP — see Tailscale Serve row below |
-
-### Tailscale only — HTTPS via Tailscale Serve, invisible on local network
-
-| Tailscale Serve port | Forwards to | Service |
+ 
+### Tailscale only — HTTPS via Tailscale Serve
+ 
+| Tailscale Serve port | Forwards from | Service |
 |---|---|---|
 | 8443 | `100.101.7.56:18789` | OpenClaw web interface |
 | 8444 | `100.101.7.56:5678` | n8n editor |
 | 8445 | `100.101.7.56:8096` | Vaultwarden |
 | 8446 | `100.101.7.56:8080` | Pi-hole web admin |
-
-> Pi-hole's web admin is bound to port 8080 on the host. Tailscale Serve forwards HTTPS requests on port 8446 to it. Port 8080 is not bound to the Tailscale IP directly — Tailscale Serve handles the exposure. Port 22 (SSH) is also tailnet-only, covered by the `ufw allow in on tailscale0` rule.
-
+ 
+> Pi-hole's web admin listens on port 8080, and Tailscale Serve forwards HTTPS requests on port 8446 to it. Once UFW ([11 — UFW](guides/11-ufw.md)) is configured, port 8080 is not reachable from the local network — only the `tailscale0` interface is allowed in, so port 8446 is the only way to reach the Pi-hole admin panel. Port 22 (SSH) is tailnet-only for the same reason.
+ 
 ### Internal Docker ports
-
+ 
 | Port | Service | Bound to |
 |---|---|---|
 | 18789 | OpenClaw | `100.101.7.56` + `127.0.0.1` |
 | 5678 | n8n | `100.101.7.56` + `127.0.0.1` |
 | 8096 | Vaultwarden | `100.101.7.56` + `127.0.0.1` |
-
+ 
 > Each Docker service is bound to both the Tailscale IP (so Tailscale Serve can proxy to it) and `127.0.0.1` (so health checks and CLI commands can reach it from the Pi host without going through Tailscale).
-
+ 
 ---
-
+ 
 ## Key file paths
-
+ 
 | Path | What |
 |---|---|
 | `/etc/tor/torrc` | Tor configuration — relay and hidden service settings |
@@ -99,11 +96,11 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | `~/vaultwarden/` | Vaultwarden Docker Compose project |
 | `~/vaultwarden/.env` | Vaultwarden environment variables |
 | `~/vaultwarden/vaultwarden-data/` | Vaultwarden database, attachments, and encryption keys — **back this up** |
-
+ 
 ---
-
+ 
 ## Sources
-
+ 
 | # | URL |
 |---|-----|
 | [1] | https://discourse.pi-hole.net/t/how-do-i-configure-my-devices-to-use-pi-hole-as-their-dns-server/245 |

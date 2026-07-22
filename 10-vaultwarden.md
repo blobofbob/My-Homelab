@@ -2,19 +2,13 @@
 
 Vaultwarden is a lightweight, self-hosted, Bitwarden-compatible password manager. This guide deploys it as a Docker container bound to the Tailscale IP, reachable only from devices on the tailnet.
 
-This is a standalone guide — it can be followed independently, but it assumes the rest of the homelab is already set up. See the [main homelab guide](../index.md) for Tailscale, Docker, and UFW.
-
 **Prerequisites:** [04 — Tailscale](04-tailscale.md) and [08 — Docker](08-docker.md) complete.
 
 **What we're adding:**
 
 | Service | Docker host port | Tailscale Serve port |
-|---|---|---|---|
+|---|---|---|
 | Vaultwarden | 8096 (bound to Tailscale IP) | 8445 |
-
-> **Why Tailscale-only?** Binding Vaultwarden to the Tailscale IP makes it invisible on the local network — reachable only from devices on the tailnet. No port forwarding, no firewall rules, no public exposure.
-
-> **Why HTTPS from the start?** Vaultwarden requires HTTPS for browser extensions and mobile apps to function at all — it refuses to connect over plain HTTP. Tailscale Serve provides valid certificates automatically for the tailnet, no domain name or Certbot needed.
 
 ---
 
@@ -33,7 +27,7 @@ Confirm HTTPS certificates are still enabled at `https://login.tailscale.com/adm
 
 ## Step 2 — Set up Tailscale Serve
 
-Setting this up before starting the stack means `DOMAIN` is correct from day one.
+Setting this up before starting the stack means `DOMAIN` is correct from the start.
 
 > **Why point at the Tailscale IP, not `localhost`?** The Vaultwarden container is bound to the Tailscale IP. Pointing Serve at `localhost` gets a connection refused — nothing is listening there from Docker's perspective.
 
@@ -121,13 +115,9 @@ services:
       - ./vaultwarden-data:/data
 ```
 
-> **Why `SIGNUPS_ALLOWED=false` from the start?** The account is created through the admin panel in Step 9. Starting with registrations disabled means there is never a window where another device on the tailnet could register before you.
+> **Why `SIGNUPS_ALLOWED=false`** The account is created through the admin panel in Step 9. Starting with registrations disabled means there is never a window where another device on the tailnet could register before you.
 
 > **Why two port bindings?** The Tailscale IP binding is what Tailscale Serve proxies to. The `127.0.0.1` binding allows `curl http://127.0.0.1:8096` health checks from the Pi host itself without going through Tailscale.
-
-> **Why no `version:` key?** Deprecated in Docker Compose v2 and has no effect.
-
-> **Image pinning:** `:latest` is used here for simplicity.
 
 ---
 
@@ -193,7 +183,7 @@ ADMIN_TOKEN='$argon2id$v=19$m=65540,t=3,p=4$...$...'
 DOMAIN=https://raspberrypi.tail7aae4f.ts.net:8445
 ```
 
-> **Why single quotes around `ADMIN_TOKEN`?** The Argon2 hash contains `$` signs that a shell would try to interpolate as variable names. Single quotes in a `.env` file prevent that — Docker Compose strips the quotes correctly before passing the value to the container. Do not double the `$` signs; that's only needed when inlining the hash directly inside `docker-compose.yml` without a `.env` file.
+> **Why single quotes around `ADMIN_TOKEN`?** The Argon2 hash contains `$` signs that a shell would try to interpolate as variable names. Single quotes in a `.env` file prevent that — Docker Compose strips the quotes correctly before passing the value to the container. Do not double the `$` signs.
 
 Apply the change:
 

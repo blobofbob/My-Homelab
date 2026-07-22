@@ -10,7 +10,7 @@ UFW (Uncomplicated Firewall) is a frontend for iptables that enforces a deny-by-
 
 Docker manages its own iptables chains for container networking, independently of UFW. Containers stay off the local network because they're bound to the Tailscale IP, not `0.0.0.0` — not because of anything UFW does.
 
-> **⚠ Enabling or reloading UFW can silently break container internet access, even when every rule looks correct.** Confirmed on this system: `iptables -L DOCKER-FORWARD` showed Docker's own bridge `ACCEPT` rules present and correct, yet containers still got `ENETUNREACH` on every outbound connection. **A full container restart fixes it** — Step 7 below builds this in as a required part of enabling UFW, not an optional afterthought.
+> **⚠ Enabling or reloading UFW can silently break container internet access, even when every rule looks correct.** Confirmed on this system: `iptables -L DOCKER-FORWARD` showed Docker's own bridge `ACCEPT` rules present and correct, yet containers still got `ENETUNREACH` on every outbound connection. **A full container restart fixes it**
 
 `iptables-persistent` must never be installed alongside UFW — the two manage iptables independently, and installing it automatically deletes UFW.
 
@@ -47,8 +47,6 @@ sudo ufw allow 9001/tcp  # Tor relay (ORPort)
 ```bash
 sudo ufw allow from 192.168.11.0/24 to any port 53
 ```
-
-Replace `192.168.11.0/24` with your actual local subnet if different.
 
 **5 — Docker containers → Pi INPUT:**
 
@@ -88,17 +86,25 @@ Expected:
 
 ```
 Status: active
-Logging: on (low)
-Default: deny (incoming), allow (outgoing), deny (routed)
 
 To                         Action      From
 --                         ------      ----
-Anywhere on tailscale0     ALLOW IN    Anywhere
-80/tcp                     ALLOW IN    Anywhere
-443/tcp                    ALLOW IN    Anywhere
-9001/tcp                   ALLOW IN    Anywhere
-53                         ALLOW IN    192.168.11.0/24
-Anywhere                   ALLOW IN    172.16.0.0/12
+Anywhere on tailscale0     ALLOW       Anywhere
+25565/tcp                  ALLOW       Anywhere
+19132/udp                  ALLOW       Anywhere
+19133/udp                  ALLOW       Anywhere
+9001/tcp                   ALLOW       Anywhere
+80/tcp                     ALLOW       Anywhere
+443/tcp                    ALLOW       Anywhere
+53                         ALLOW       192.168.11.0/24
+Anywhere                   ALLOW       172.16.0.0/12
+Anywhere (v6) on tailscale0 ALLOW       Anywhere (v6)
+25565/tcp (v6)             ALLOW       Anywhere (v6)
+19132/udp (v6)             ALLOW       Anywhere (v6)
+19133/udp (v6)             ALLOW       Anywhere (v6)
+9001/tcp (v6)              ALLOW       Anywhere (v6)
+80/tcp (v6)                ALLOW       Anywhere (v6)
+443/tcp (v6)               ALLOW       Anywhere (v6)
 ```
 
 Then confirm containers can reach the internet:
