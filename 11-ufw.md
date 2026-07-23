@@ -79,7 +79,7 @@ UFW will warn that enabling it may interrupt existing SSH connections — not a 
 **8 — Verify:**
 
 ```bash
-sudo ufw status verbose
+sudo ufw status
 ```
 
 Expected:

@@ -91,7 +91,7 @@ This should work without `sudo` now.
 
 Docker manages its own iptables chains for container networking, independently of UFW. When a container stack starts, Docker inserts `DOCKER-USER` and `DOCKER-FORWARD` into the kernel's `FORWARD` chain, ahead of UFW's own rules.
 
-> ** Always restart running containers after enabling or reloading UFW.** On my system, a UFW enable/reload left Docker's per-container forwarding rules stale even though they still looked correct in `iptables -L DOCKER-FORWARD`. A full restart forces Docker to re-register its rules against the current firewall state and fixes it immediately.
+> **Always restart running containers after enabling or reloading UFW.** On my system, a UFW enable/reload left Docker's per-container forwarding rules stale even though they still looked correct in `iptables -L DOCKER-FORWARD`. A full restart forces Docker to re-register its rules against the current firewall state and fixes it immediately.
 
 `iptables-persistent` must never be installed alongside UFW — the two manage iptables independently, and installing it has been confirmed to remove UFW's own rules.
 

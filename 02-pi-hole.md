@@ -23,13 +23,14 @@ The installer walks through a series of prompts:
 - **Web server** — select On.
 - **Log queries** — recommended; useful for debugging and seeing what's being blocked.
 - **Privacy level** — level 0 logs everything. Increase it if you want less stored.
+
 At the end, the installer displays a generated admin password — save this somewhere.
  
 ---
  
 ## Changing the web interface port 
  
-By default, the Pi-hole web interface uses ports 80 and 443, which conflicts with Apache. I changed the ports whilst setting up Apache, but we will do this now.
+By default, the Pi-hole web interface uses ports 80 and 443, which conflicts with Apache. Change these now, before Apache is installed in the next guide.
  
 **Option 1 — CLI (recommended):**
  
@@ -51,6 +52,7 @@ Open `/etc/pihole/pihole.toml`, find the `[webserver]` section, and set:
 - The `o` suffix marks a port as optional — Pi-hole won't error if it can't bind it.
 - The `s` suffix marks a port as TLS/HTTPS.
 - Setting the value to an empty string disables the web server entirely.
+
 After making the change, restart Pi-hole's FTL service:
  
 ```bash
@@ -110,7 +112,7 @@ Once both steps are done, Pi-hole will block ads for every device on your tailne
  
 ## Accessing the web admin remotely
  
-Once [Tailscale](04-tailscale.md) is set up (i also recommend setting up [UFW](11-ufw.md) before following these steps), the Pi-hole admin panel is accessible securely from anywhere on the tailnet via Tailscale Serve.
+Once [Tailscale](04-tailscale.md) is set up (I also recommend setting up [UFW](11-ufw.md) before following these steps), the Pi-hole admin panel is accessible securely from anywhere on the tailnet via Tailscale Serve.
  
 The Tailscale Serve rule that enables this:
  

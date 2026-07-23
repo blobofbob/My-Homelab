@@ -26,10 +26,10 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | Service | What it does |
 |---|---|
 | Pi-hole | Network-wide ad blocker and DNS server — covers both the local network and the tailnet |
-| Apache | Public web server, serves my website at gabriel.fortin-cara.org |
+| Apache | Public web server, serves these guides at gabriel.fortin-cara.org |
 | Tailscale | Encrypted mesh VPN; provides SSH into my Pi, Tailscale Serve (reverse proxy), and MagicDNS |
 | Tor relay | Contributes bandwidth to the Tor anonymity network |
-| Tor hidden service | .onion mirror of my website, served by Apache via torrc |
+| Tor hidden service | .onion mirror of these guides, served by Apache via torrc |
 | Docker | Container for OpenClaw, n8n, and Vaultwarden |
 | UFW | Deny-by-default firewall; works alongside Docker's own forwarding chains |
 | OpenClaw | AI agent framework (Google Gemma 4 31B primary, Groq backup) |

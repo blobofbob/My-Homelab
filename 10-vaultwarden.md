@@ -115,7 +115,7 @@ services:
       - ./vaultwarden-data:/data
 ```
 
-> **Why `SIGNUPS_ALLOWED=false`** The account is created through the admin panel in Step 9. Starting with registrations disabled means there is never a window where another device on the tailnet could register before you.
+> **Why `SIGNUPS_ALLOWED=false`?** The account is created through the admin panel in Step 9. Starting with registrations disabled means there is never a window where another device on the tailnet could register before you.
 
 > **Why two port bindings?** The Tailscale IP binding is what Tailscale Serve proxies to. The `127.0.0.1` binding allows `curl http://127.0.0.1:8096` health checks from the Pi host itself without going through Tailscale.
 

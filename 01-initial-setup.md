@@ -13,7 +13,8 @@ Then check if you are indeed running a 64 bit version of Debian:
 ```bash
 dpkg --print-architecture
 ```
-if it returns `arm64`, then you are running a 64 bit version. This is especially important if you would like to run the mineccraft server.
+if it returns `arm64`, then you are running a 64 bit version. This is especially important if you would like to run the Minecraft server.
+
 ---
  
 ## SSH
@@ -32,7 +33,8 @@ Connect from another machine:
 ```bash
 ssh your-username@your-pi-local-ip
 ```
-you will be prompted to input your password, type the password you chose for your user when you initially set-up your Pi
+
+You will be prompted to input your password, type the password you chose for your user when you initially set-up your Pi.
  
 You can find the Pi's local IP with:
  
@@ -40,7 +42,7 @@ You can find the Pi's local IP with:
 hostname -I
 ```
  
-Once [Tailscale](04-tailscale.md) is set up, you will be able to SSH into the Pi from any device on your tailnet (that has a CLI) using its Tailscale IP, with no additionall faffing. For now, local IP is fine.
+Once [Tailscale](04-tailscale.md) is set up, you will be able to SSH into the Pi from any device on your tailnet (that has a CLI) using its Tailscale IP, with no additional faffing. For now, local IP is fine.
  
 ---
  

@@ -1,6 +1,6 @@
 # 05 — Tor
  
-Tor is an anonymity network that routes traffic through a series of encrypted relays. The tor network helps anonymise whistleblowers and circumvent censorship around the world free of charge thanks to volunteers that run relays like the one i set up (and that you will in a bit). This guide sets up two things: a **middle relay** that contributes bandwidth to the Tor network, and a **hidden service** that makes these guides accessible with .onion address.
+Tor is an anonymity network that routes traffic through a series of encrypted relays. The tor network helps anonymise whistleblowers and circumvent censorship around the world free of charge thanks to volunteers that run relays like the one I set up (and that you will in a bit). This guide sets up two things: a **middle relay** that contributes bandwidth to the Tor network, and a **hidden service** that makes these guides accessible with .onion address.
  
 **Prerequisites:** [03 — Apache + Certbot](03-apache-certbot.md) complete. The hidden service points at Apache on port 80 — Apache must be running before Tor can serve it. You only need the prerequisite if you want to serve a webpage over tor.
  
@@ -91,7 +91,7 @@ Your relay's fingerprint and stats will appear on `https://metrics.torproject.or
  
 ## Setting up the hidden service
  
-A hidden service makes a local port accessible as a .onion address, routed entirely through Tor. The hidden service here points at Apache on port 80, creating a .onion mirror of my website.
+A hidden service makes a local port accessible as a .onion address, routed entirely through Tor. The hidden service here points at Apache on port 80, creating a .onion mirror of these guides.
  
 Add the following to `/etc/tor/torrc`, below the relay config:
  
@@ -137,7 +137,7 @@ Install via apt:
 sudo apt install onionshare-cli -y
 ```
  
-> **Why not OnionShare?.** Onionshare (without -cli) pulls in approximately 800 MB of GNOME GUI dependencies that serve no purpose on a headless server.
+> **Why not OnionShare?** OnionShare (without `-cli`) pulls in approximately 800 MB of GNOME GUI dependencies that serve no purpose on a headless server.
  
 ---
  

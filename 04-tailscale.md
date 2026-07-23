@@ -105,7 +105,7 @@ tailscale serve --bg --https=PORT http://YOUR_PI'S_MDNS_IP:PORT
 tailscale serve --bg --https=8446 http://100.101.7.56:8080
 ```
  
-Pi-hole's web admin is then reachable at `https://raspberrypi.tail7aae4f.ts.net:8446/admin` from any device on my tailnet.
+Pi-hole's web admin is then reachable at `https://raspberrypi.tail7aae4f.ts.net:8446/admin` from any device on your tailnet.
  
 Verify any Serve rule with:
  

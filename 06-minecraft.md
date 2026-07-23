@@ -1,8 +1,8 @@
 # 06 — Minecraft
  
-This guide sets up a PaperMC server with Bedrock crossplay via GeyserMC and Floodgate. PaperMC is a high-performance fork of the vanilla server — it supports plugins, fixes mechanics inconsistencies, and runs better on constrained hardware (such as a raspberry pi). GeyserMC and Floodgate are plugins that translates Bedrock Edition's network protocol into Java Edition packets and allow bedrock players to connect without having a Java account, letting players on mobile, console, and Windows Bedrock join the same server as Java Edition players.
+This guide sets up a PaperMC server with Bedrock crossplay via GeyserMC and Floodgate. PaperMC is a high-performance fork of the vanilla server — it supports plugins, fixes mechanics inconsistencies, and runs better on constrained hardware (such as a Raspberry Pi). GeyserMC and Floodgate are plugins that translate Bedrock Edition's network protocol into Java Edition packets and allow Bedrock players to connect without having a Java account, letting players on mobile, console, and Windows Bedrock join the same server as Java Edition players.
  
-This is a service I run occasionally because it consumes a lot of RAM and should probably be set up on more performant hardware, but since i have a raspberry pi 4, here we are.
+This is a service I run occasionally because it consumes a lot of RAM and should probably be set up on more performant hardware, but since I have a Raspberry Pi 4, here we are.
  
 **Prerequisites:** [11 — UFW](11-ufw.md) if you want to expose Minecraft publicly. Java must be installed before anything else.
  
@@ -263,7 +263,7 @@ sudo ss -ulnp | grep 19132
 If nothing is listening, the plugin did not load. Check the startup logs for errors from GeyserMC:
  
 ```bash
-grep -i geyser ~/minecraft/logs/latest.log
+grep -i geyser ~/minecraft_server/logs/latest.log
 ```
  
 Also confirm port 19132 UDP is open on your router and in UFW.
