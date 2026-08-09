@@ -13,7 +13,6 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | Storage | ~29 GB SD card (that comes with the starter kit) |
 | OS | Debian 13 Trixie (64-bit) |
 | Network | Ethernet only — Wi-Fi disabled via rfkill |
-| Timezone | `Europe/London` |
 | Tailscale IP | `100.101.7.56` |
 | MagicDNS hostname | `raspberrypi.tail7aae4f.ts.net` |
 | .onion address | `male3e4xwgo4swc7awciiw2vrqsok26uz3ywucte5kcvrcxsluob7kyd.onion` |
