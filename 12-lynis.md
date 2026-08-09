@@ -163,7 +163,7 @@ sudo crontab -l
 
 ## Troubleshooting
 
-**Cron job silently doesn't mail anything**
+**Cron job doesn't mail anything**
 
 Prove cron's own mail pipeline works, independent of Lynis, with a one-minute throwaway job:
 

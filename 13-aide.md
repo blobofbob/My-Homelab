@@ -300,7 +300,7 @@ Looking for `AIDE --init return code 0`.
 ```
 
 02:00 daily — before unattended-upgrades' 03:00 reboot window ([14](14-unattended-upgrades.md)),
-after any 01:00–01:30 patch installation. This means legitimate overnight patches genuinely show up
+after any 01:00–01:30 patch installation. This means legitimate overnight patches show up
 as "changed" in that night's report — expected, and useful confirmation the tool is actually
 working, not noise to suppress.
 

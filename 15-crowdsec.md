@@ -26,7 +26,7 @@ lesson as the earlier incident, from the opposite direction.
 
 **UFW reload does not wipe the bouncer's rule.** UFW only flushes and rebuilds its own custom chains
 on enable/reload — it doesn't clear rules other software inserts directly into the built-in `INPUT`
-chain (the same mechanism that lets fail2ban coexist with UFW long-term). Confirmed empirically on
+chain (the same mechanism that lets fail2ban coexist with UFW long-term). Confirmed on
 this system: the rule survived a `ufw reload`, and Docker's own internet access was unaffected
 immediately after.
 
@@ -111,8 +111,7 @@ Two things worth confirming, not assuming:
   commented out — matches the scope decided above. No edit needed if so.
 - The file also ships an `nftables:` block with `enabled: true`. This looks like it could conflict
   with `mode: iptables`, but it's inert boilerplate present in every default config regardless of
-  which mode is active — confirmed against the upstream template and multiple real-world
-  deployments using this same unedited file successfully.
+  which mode is active.
 
 `ipset` is a hard dependency for iptables mode — confirm it installed automatically:
 
