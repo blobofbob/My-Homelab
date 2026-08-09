@@ -13,6 +13,7 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | Storage | ~29 GB SD card (that comes with the starter kit) |
 | OS | Debian 13 Trixie (64-bit) |
 | Network | Ethernet only — Wi-Fi disabled via rfkill |
+| Timezone | `Europe/London` |
 | Tailscale IP | `100.101.7.56` |
 | MagicDNS hostname | `raspberrypi.tail7aae4f.ts.net` |
 | .onion address | `male3e4xwgo4swc7awciiw2vrqsok26uz3ywucte5kcvrcxsluob7kyd.onion` |
@@ -35,6 +36,11 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | OpenClaw | AI agent framework (Google Gemma 4 31B primary, Groq backup) |
 | n8n | Workflow automation engine, integrated with OpenClaw |
 | Vaultwarden | Self-hosted password manager |
+| msmtp | Outbound-only mail relay (Gmail app password) — shared notification layer for Lynis, AIDE, unattended-upgrades, and CrowdSec |
+| Lynis | Weekly CIS-style security audit (CISOfy repo) |
+| AIDE | Nightly file integrity monitoring |
+| unattended-upgrades | Automatic patching across Debian's own repos and every third-party repo added by these guides |
+| CrowdSec | Log-based intrusion detection, engine + iptables firewall bouncer |
  
 ---
  
@@ -66,7 +72,7 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | 8445 | `100.101.7.56:8096` | Vaultwarden |
 | 8446 | `100.101.7.56:8080` | Pi-hole web admin |
  
-> Pi-hole's web admin listens on port 8080, and Tailscale Serve forwards HTTPS requests on port 8446 to it. Once UFW ([11 — UFW](guides/11-ufw.md)) is configured, port 8080 is not reachable from the local network — only the `tailscale0` interface is allowed in, so port 8446 is the only way to reach the Pi-hole admin panel. Port 22 (SSH) is tailnet-only for the same reason.
+> Pi-hole's web admin listens on port 8080, and Tailscale Serve forwards HTTPS requests on port 8446 to it. Once UFW ([11 — UFW](11-ufw.md)) is configured, port 8080 is not reachable from the local network — only the `tailscale0` interface is allowed in, so port 8446 is the only way to reach the Pi-hole admin panel. Port 22 (SSH) is tailnet-only for the same reason.
  
 ### Internal Docker ports
  
@@ -77,6 +83,12 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | 8096 | Vaultwarden | `100.101.7.56` + `127.0.0.1` |
  
 > Each Docker service is bound to both the Tailscale IP (so Tailscale Serve can proxy to it) and `127.0.0.1` (so health checks and CLI commands can reach it from the Pi host without going through Tailscale).
+
+### Loopback only — not exposed anywhere, no UFW rule needed
+
+| Port | Service | Notes |
+|---|---|---|
+| 8090 | CrowdSec Local API (LAPI) | Moved from the default 8080 — conflicted with Pi-hole's web admin. Only the local firewall bouncer talks to it. |
  
 ---
  
@@ -96,6 +108,21 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | `~/vaultwarden/` | Vaultwarden Docker Compose project |
 | `~/vaultwarden/.env` | Vaultwarden environment variables |
 | `~/vaultwarden/vaultwarden-data/` | Vaultwarden database, attachments, and encryption keys — **back this up** |
+| `/etc/msmtprc` | System-wide mail relay config (Gmail app password) — root-only readable, root's crontab `MAILTO` routes through it |
+| `/etc/apt/sources.list.d/cisofy-lynis.list` | Lynis apt repo (CISOfy) |
+| `/var/log/lynis-report.dat` | Lynis machine-readable report — grep for `^warning\|^suggestion` |
+| `/etc/aide/aide.conf` | AIDE main config |
+| `/etc/aide/aide.conf.d/` | AIDE rule fragments — Debian's own package ships a watch-everything-by-default ruleset here, ours adds exclusions on top |
+| `/var/lib/aide/aide.db` | AIDE's live integrity database |
+| `/var/log/aide/aide.log` | AIDE check reports (rotated weekly, 6 generations) |
+| `/etc/apt/apt.conf.d/52unattended-upgrades-local` | Our unattended-upgrades scope/reboot config (local override, package's own `50unattended-upgrades` untouched) |
+| `/etc/apt/apt.conf.d/20auto-upgrades` | Enables the periodic apt timer that runs unattended-upgrades |
+| `/etc/systemd/system/apt-daily.timer.d/override.conf` | Retimes the update-check timer to 01:00 |
+| `/etc/systemd/system/apt-daily-upgrade.timer.d/override.conf` | Retimes the install timer to 01:30 |
+| `/etc/crowdsec/config.yaml` | CrowdSec engine config, incl. LAPI `listen_uri` |
+| `/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml` | Firewall bouncer config, incl. `iptables_chains` |
+| `/etc/crowdsec/notifications/email.yaml` | CrowdSec email notification plugin |
+| `/etc/crowdsec/profiles.yaml` | Wires notification plugins to remediation decisions |
  
 ---
  
@@ -134,3 +161,15 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | [29] | https://docs.openclaw.ai/providers/groq |
 | [30] | https://docs.openclaw.ai/providers/google |
 | [31] | https://github.com/dani-garcia/vaultwarden/wiki |
+| [32] | https://wiki.debian.org/msmtp |
+| [33] | https://www.marlam.de/msmtp/ |
+| [34] | https://cisofy.com/documentation/lynis/ |
+| [35] | https://packages.cisofy.com/community/lynis/deb/ |
+| [36] | https://manpages.debian.org/testing/aide/aide.conf.5.en.html |
+| [37] | https://wiki.debian.org/UnattendedUpgrades |
+| [38] | https://wiki.debian.org/AptCronJob |
+| [39] | https://manpages.debian.org/testing/unattended-upgrades/unattended-upgrades.8.en.html |
+| [40] | https://docs.crowdsec.net/u/getting_started/installation/linux/ |
+| [41] | https://docs.crowdsec.net/u/bouncers/firewall/ |
+| [42] | https://docs.crowdsec.net/u/observability/notification-plugins/ |
+| [43] | https://hub.crowdsec.net/ |

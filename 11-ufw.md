@@ -199,4 +199,9 @@ sudo systemctl restart pihole-FTL
 
 ---
 
-*This is the last guide in the series. For the complete port map and file paths, see the [Reference](../reference.md).*
+This is the last of the core service guides — [12 — Lynis](12-lynis.md) onward covers hardening and
+detection, and can be followed in order from here.
+
+**Next:** [12 — Lynis](12-lynis.md)
+
+**Sources:** for the complete port map and file paths, see the [Reference](reference.md).
