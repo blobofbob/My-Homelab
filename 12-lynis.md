@@ -1,7 +1,7 @@
 # 12 — Lynis
 
 Lynis is a CIS-style security auditing tool — it inspects the running system against hundreds of
-hardening checks and reports warnings and suggestions. It doesn't fix anything on its own; it's a
+hardening checks, reports, warnings and suggestions. It doesn't fix anything on its own; it's a
 periodic health check, run here weekly.
 
 This guide also sets up the **notification layer** — a lightweight mail relay that Lynis, AIDE
