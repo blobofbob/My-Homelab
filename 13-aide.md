@@ -141,6 +141,7 @@ this tool exists to catch:
 ```bash
 sudo tee /etc/aide/aide.conf.d/31_aide_tor > /dev/null << 'EOF'
 /var/lib/tor$ d VarDir
+!/var/lib/tor/cached-certs$
 !/var/lib/tor/cached-consensus$
 !/var/lib/tor/cached-descriptors$
 !/var/lib/tor/cached-descriptors\.new$
@@ -197,6 +198,55 @@ sudo tee /etc/aide/aide.conf.d/31_aide_crowdsec > /dev/null << 'EOF'
 !/var/log/crowdsec_api\.log$
 EOF
 ```
+
+---
+
+## A different kind of noise: randomized names that regenerate on every restart
+
+Everything excluded so far is *high-churn content at a fixed path*. There's a second, distinct
+pattern worth knowing to recognize on sight: a file or directory whose **name itself** is a fresh
+random string every time a service restarts. These show up in a report as one entry Added and a
+different entry Removed in the same run — never a clean "changed" — because the old name and the
+new name genuinely are different database entries. Excluding the fixed path doesn't help here, since
+there is no fixed path; the exclusion has to match the *pattern* the name follows instead.
+
+Two examples found running this exact setup:
+
+**Tor's systemd `PrivateTmp` sandboxing** — systemd gives the `tor@default` service its own private
+`/tmp` and `/var/tmp` namespace, named `systemd-private-<32-hex-chars>-tor@default.service-<random>`.
+A fresh hex string gets generated on every service restart:
+
+```bash
+sudo tee /etc/aide/aide.conf.d/31_aide_tor_privatetmp > /dev/null << 'EOF'
+!/tmp/systemd-private-[0-9a-f]+-tor@default\.service-[[:alnum:]]+$
+!/tmp/systemd-private-[0-9a-f]+-tor@default\.service-[[:alnum:]]+/.*$
+!/var/tmp/systemd-private-[0-9a-f]+-tor@default\.service-[[:alnum:]]+$
+!/var/tmp/systemd-private-[0-9a-f]+-tor@default\.service-[[:alnum:]]+/.*$
+EOF
+```
+
+**CrowdSec's notification plugin socket** — each notification plugin (our `notification-email`,
+[15](15-crowdsec.md)) runs as a subprocess talking to the main `crowdsec` engine over a Unix socket
+at `/tmp/plugin<random digits>`, regenerated every time the `crowdsec` service restarts:
+
+```bash
+sudo tee /etc/aide/aide.conf.d/31_aide_crowdsec_notif_socket > /dev/null << 'EOF'
+!/tmp/plugin[0-9]+$
+EOF
+```
+
+Confirmed via `sudo lsof /tmp/pluginNNNNNN` before writing the rule — owned by CrowdSec's
+notification process (user `nobody`), not something unrelated squatting on a similar-looking name.
+Any other systemd-`PrivateTmp`-confined service, or any other tool with a plugin/subprocess
+architecture, is likely to show the same Added+Removed churn pattern under a different name — the
+fix is always the same shape: identify the fixed part of the name, wildcard the random part.
+
+If a newly-added exclusion like this still shows an Added+Removed pair on the *next* check after
+being applied, that's not necessarily the rule failing — it can be the database catching up: the
+*old* randomly-named entry drops out (shows as Removed) the first time it's no longer tracked, while
+a genuinely new one appearing afterward would mean the rule isn't matching newly-created names. The
+`--limit` + `--log-level=rule` trace from earlier in this guide is the way to tell these apart for
+certain rather than guess from the report alone.
 
 **Misc recurring noise** — Pi-hole's shared-memory files, cert-renewal logs, AIDE's own init log,
 tmux sockets:
@@ -333,7 +383,7 @@ sudo aide --config /etc/aide/aide.conf --init --limit "^/path" --log-level=rule
 sudo aideinit -y -f
 
 # Pull just the summary line from the last report
-sudo grep -A3 "^Summary:" /var/log/aide/aide.log
+sudo grep -A5 "^Summary:" /var/log/aide/aide.log
 ```
 
 ---
@@ -344,6 +394,15 @@ sudo grep -A3 "^Summary:" /var/log/aide/aide.log
 
 Missing `--config /etc/aide/aide.conf` — see the scheduling section above.
 
+**`sudo grep -A5 "^Summary:" /var/log/aide/aide.log` produces no output at all**
+
+Not a broken command — a genuinely clean check (no added, removed, or changed entries) skips the
+`Summary:` block entirely because it does not exist. Instead, use the following command if you want to be absolutely sure you have a clean check 
+
+```bash
+sudo grep -q "found NO differences" /var/log/aide/aide.log && echo "clean"
+```
+
 **Report is enormous for what should be a small change**
 
 `report_level=changed_attributes` (the default) prints full per-attribute detail for every changed
@@ -351,7 +410,7 @@ file — expected verbosity, not a bug, when many files genuinely changed (a ker
 example). Pull just the summary counts first:
 
 ```bash
-sudo grep -A3 "^Summary:" /var/log/aide/aide.log
+sudo grep -A5 "^Summary:" /var/log/aide/aide.log
 ```
 
 Then find the real section boundaries before extracting further, rather than guessing at the report
