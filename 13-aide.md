@@ -77,6 +77,15 @@ A count roughly matching the number of files actually in that path confirms ever
 being correctly rejected — direct evidence from AIDE's own decision log, not an inference from
 report counts.
 
+> **A second use for this trace, beyond confirming exclusions: confirming inclusions.** The same
+> `--limit`/`--log-level=rule` method works in reverse — pointed at a path you want to be *sure* is
+> still watched (not excluded by an overly broad regex), it prints `ADD` verdicts instead of
+> `do NOT add` ones. When writing an exclusion that only *partially* matches a directory's contents
+> (e.g. excluding dpkg's bookkeeping files but not its executable maintainer scripts), trace both
+> the excluded and the retained subset separately and confirm each gets the verdict you expect.
+> Getting the count/verdict split right here is better than discovering a security-relevant file
+> has been excluded from the database.
+
 ---
 
 ## Scope — exclusion fragments
@@ -155,6 +164,18 @@ sudo tee /etc/aide/aide.conf.d/31_aide_tor > /dev/null << 'EOF'
 EOF
 ```
 
+> **`/var/lib/tor/keys/` (the relay's own signing keypair) is deliberately *not* excluded here,
+> distinct from `/var/lib/tor/hidden_service/` (the .onion identity key) — and the two are easy to
+> conflate in a moment of alarm.** Tor relays rotate their medium-term
+> `ed25519_signing_cert`/`ed25519_signing_secret_key` periodically as normal operation; seeing these
+> flagged as changed in a report is expected and not on its own a compromise signal. The hidden
+> service's `hs_ed25519_secret_key` is a *different* key with a *different* rotation expectation —
+> it should essentially never change. When a report shows Tor-related changes, check which directory
+> they're actually under before reacting: confirm the hidden service address itself is unaffected
+> with `sudo cat /var/lib/tor/hidden_service/hostname` against the value in
+> [reference.md](../reference.md), rather than assuming either "it's just Tor, ignore it" or
+> "any Tor key change is an incident."
+
 **Tailscale** — netmap cache and rotated daemon logs:
 
 ```bash
@@ -187,7 +208,10 @@ sudo tee /etc/aide/aide.conf.d/33_aide_kernel_modules > /dev/null << 'EOF'
 EOF
 ```
 
-**CrowdSec's own operational files** — database WAL/SHM and its own logs ([15](15-crowdsec.md)):
+**CrowdSec's own operational files** — database WAL/SHM and its own logs ([15](15-crowdsec.md)).
+Note what is *not* here: `crowdsec.db` itself and the Hub's scenario/pattern data
+(`/var/lib/crowdsec/data/*.txt`, `*.json`) are deliberately left watched, not excluded — see the
+note below the fragment:
 
 ```bash
 sudo tee /etc/aide/aide.conf.d/31_aide_crowdsec > /dev/null << 'EOF'
@@ -198,6 +222,18 @@ sudo tee /etc/aide/aide.conf.d/31_aide_crowdsec > /dev/null << 'EOF'
 !/var/log/crowdsec_api\.log$
 EOF
 ```
+
+> **Why `crowdsec.db` and the Hub data files stay watched, unlike most other services' data
+> directories in this guide.** These looked, at first glance, like the same category of
+> "high-churn, no security value" data as Pi-hole's gravity DB or Docker's storage layer — but
+> they're not. `crowdsec.db` holds live ban/decision state; the Hub `.txt`/`.json` files
+> (`sqli_probe_patterns.txt`, `backdoors.txt`, etc.) are the actual detection signatures CrowdSec
+> matches traffic against. Root-level tampering with either — quietly stripping a pattern from a
+> detection file, for instance — would silently degrade CrowdSec without touching any config file
+> this guide already tracks elsewhere. The disk-churn argument that justifies excluding e.g.
+> Pi-hole's gravity backups doesn't apply the same way here: these files change rarely (only on
+> deliberate `cscli` operations, not automatically — see the note on the Hub-update timer below),
+> so watching them costs little and closes a real gap.
 
 ---
 
@@ -264,6 +300,73 @@ sudo tee /etc/aide/aide.conf.d/31_aide_misc_churn > /dev/null << 'EOF'
 !/var/lib/systemd/timers/stamp-certbot\.timer$
 EOF
 ```
+
+**Package management churn** — apt/dpkg/man caches, and dpkg's per-package bookkeeping. All fully
+reconstructable from files that stay watched elsewhere (the caches are derived from the real
+packages/libraries; the dpkg bookkeeping is metadata, not code). **Deliberately excludes only the
+non-executable bookkeeping files** — `.list`, `.md5sums`, `.shlibs`, `.symbols`, `.triggers`,
+`.conffiles`. The maintainer scripts (`.postinst`, `.postrm`, `.preinst`, `.prerm`) are root-executed
+code and stay watched; a change there with no matching entry in `apt`'s own history log
+(`/var/log/apt/history.log`) would be a real supply-chain-tamper signal worth investigating:
+
+```bash
+sudo tee /etc/aide/aide.conf.d/31_aide_pkg_mgmt_cache > /dev/null << 'EOF'
+!/var/cache/apt/pkgcache\.bin$
+!/var/cache/apt/srcpkgcache\.bin$
+!/var/cache/apt/archives$
+!/var/cache/apt/archives/.*$
+!/var/cache/man$
+!/var/cache/man/.*$
+!/var/cache/ldconfig/aux-cache$
+!/etc/ld\.so\.cache$
+!/var/backups/dpkg\.arch\.[0-9]+\.gz$
+!/var/lib/dpkg/info/.*\.list$
+!/var/lib/dpkg/info/.*\.md5sums$
+!/var/lib/dpkg/info/.*\.shlibs$
+!/var/lib/dpkg/info/.*\.symbols$
+!/var/lib/dpkg/info/.*\.triggers$
+!/var/lib/dpkg/info/.*\.conffiles$
+!/var/lib/apt/periodic/.*$
+!/var/lib/unattended-upgrades/kept-back$
+!/var/lib/systemd/timers/stamp-.*$
+EOF
+```
+
+**Live logs only** — the *actively-growing* log file for each of these, never the rotated/archived
+copies. This is the same convention already used above for `pihole.log`/`audit.log`/
+`letsencrypt.log`, extended to a few more services: a live log changing daily is expected noise, but
+an already-rotated, compressed copy changing after the fact is not — that would suggest evidence
+tampering, not routine operation, so rotated copies are deliberately left watched everywhere in this
+guide:
+
+```bash
+sudo tee /etc/aide/aide.conf.d/31_aide_live_logs_only > /dev/null << 'EOF'
+!/var/log/apache2/access\.log$
+!/var/log/apache2/error\.log$
+!/var/log/unattended-upgrades/unattended-upgrades\.log$
+!/var/log/unattended-upgrades/unattended-upgrades-dpkg\.log$
+!/var/log/lynis\.log$
+!/var/log/lynis-report\.dat$
+!/var/log/msmtp\.log$
+EOF
+```
+
+> `lynis.log` and `lynis-report.dat` are the one exception to "live vs. rotated" above — per
+> [12 — Lynis](12-lynis.md) they overwrite in place on every run rather than accumulating dated
+> files, so there's no rotated-copy concept to preserve for these two; excluding them outright is
+> correct, not a gap.
+>
+> `msmtp.log` has no logrotate config on this system (`/etc/logrotate.d/` — checked, absent) and
+> will grow unbounded. That's a minor, separate disk-space consideration on a ~29GB SD card, not an
+> AIDE issue — worth adding a logrotate config for it at some point, tracked here as a known gap
+> rather than silently ignored.
+
+Deliberately **not** excluded, despite surfacing as noise in a real diagnostic pass on this system:
+`/var/lib/cloud/*` (cloud-init state — inert on this Pi today, but it's the on-disk mirror of
+`/boot/firmware/user-data`, a FAT32 boot-partition file that would execute as root on next boot if
+tampered with; cheap to keep watched given what it sits downstream of), `/home/*/.bash_history` and
+shell/tool config files (deliberately watched — a homelab-specific choice to prioritize catching
+unusual account activity over reducing noise, at the cost of a "changed" entry every session).
 
 **Validate everything before initializing** (fast syntax check, no filesystem scan):
 
@@ -367,6 +470,79 @@ sudo aide --config /etc/aide/aide.conf --check
 
 ---
 
+## Diagnosing a large or unexpected diff
+
+A worked example, since "the report shows a lot more changes than I expected" is the single most
+useful case to have a documented method for, not just a documented conclusion. This happened once on
+this system: a nightly check reported 65 Added, 66 Removed, and 1263 Changed entries — large enough
+to warrant real investigation rather than a shrug.
+
+**1 — Never trust the aggregate numbers. Pull the actual sections.**
+
+```bash
+grep -n "^Added entries:\|^Removed entries:\|^Changed entries:\|^Detailed information" /var/log/aide/aide.log
+```
+
+Use the line numbers this returns to slice out each section with `sed -n 'START,ENDp'`. Read Added
+and Removed first — they're usually much shorter than Changed and quicker to eyeball against
+whatever you already expect to have changed recently (a remediation session, a manual purge, etc).
+
+**2 — Cross-check against real system logs, not memory.** `/var/log/apt/history.log` (grouped by
+transaction, includes `Commandline:` and `Requested-By:` for manual runs) and
+`/var/log/unattended-upgrades/unattended-upgrades.log` together give a complete, timestamped account
+of every package change on the system. A large Changed count is often simply several days' worth of
+unattended-upgrades transactions that hadn't been checked against yet, not a sign anything is wrong
+— but confirm this from the actual logs, don't assume it.
+
+**3 — For a large Changed section, don't read 1000+ lines by eye.** Extract every changed path and
+check its package ownership programmatically:
+
+```bash
+sed -n 'START,ENDp' /var/log/aide/aide.log | grep -oP '(?<=: ).*' | sort -u > /tmp/aide-changed-paths.txt
+
+KNOWN_PKGS='pkg-one|pkg-two|pkg-three'   # every package name from step 2's log review, |-separated
+
+> /tmp/aide-unexplained.txt
+while read -r path; do
+  pkg=$(dpkg -S "$path" 2>/dev/null | cut -d: -f1)
+  if [ -z "$pkg" ]; then
+    echo "UNOWNED: $path" >> /tmp/aide-unexplained.txt
+  elif ! echo "$pkg" | grep -qE "$KNOWN_PKGS"; then
+    echo "UNEXPECTED ($pkg): $path" >> /tmp/aide-unexplained.txt
+  fi
+done < /tmp/aide-changed-paths.txt
+```
+
+`UNOWNED` isn't inherently bad — dpkg doesn't own its own bookkeeping files, logs, or most of
+`/var/lib/*`'s runtime state, so a large `UNOWNED` count is expected. `UNEXPECTED` (owned by a real
+package, but one not in the known-changed list) is the bucket that actually needs reading line by
+line before concluding anything.
+
+**4 — Don't assume "many lines reviewed and explained" means the header count and the detailed
+listing agree — check.** On this system, the detailed listing for the Changed section actually
+contained 1287 lines against a reported `Changed entries: 1263` header — a real 24-line discrepancy.
+Before writing it off, confirm the block itself is clean (no stray separator/header text leaked into
+the count):
+
+```bash
+sed -n 'START,ENDp' /var/log/aide/aide.log | grep "^[a-z]" | cut -c1 | sort | uniq -c
+```
+
+All entries should reduce to a small set of legitimate one-character type codes (`f`, `d`, `l`, and
+so on). If they do, and the first/last lines of the block are genuine filesystem paths rather than
+formatting artifacts, the discrepancy is a cosmetic quirk in how AIDE's summary header tallies
+against the full listing — not a sign of anything hidden. This project has not found a case where
+the detailed listing itself was inaccurate; only the header count has been observed to drift from
+it. Trust the listing, not the header, when the two disagree.
+
+**5 — Any path that touches something in the "never exclude" category (Tor's hidden-service key,
+CrowdSec's ban database or Hub signature files, and similarly sensitive paths noted throughout this
+guide) gets independently verified on its own terms, regardless of how well everything else in the
+diff is explained.** A fully-explained diff elsewhere in the report is not evidence about an
+unrelated sensitive path — check it directly.
+
+---
+
 ## Useful commands
 
 ```bash
@@ -419,6 +595,9 @@ format:
 ```bash
 grep -n "^Changed entries:" /var/log/aide/aide.log
 ```
+
+See also the [Diagnosing a large or unexpected diff](#diagnosing-a-large-or-unexpected-diff) section
+above for the full method, not just the summary-pulling step.
 
 **An exclusion doesn't seem to be working**
 
