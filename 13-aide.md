@@ -567,7 +567,13 @@ sudo aide --config /etc/aide/aide.conf --config-check
 sudo aide --config /etc/aide/aide.conf --init --limit "^/path" --log-level=rule
 
 # Rebuild the database after a legitimate, expected change
-sudo aideinit -y -f
+tmux new-session -d -s aideinit "sudo aideinit -y -f"
+
+# Attach to the tmux session if you need to
+tmux attach-session -t aideinit
+
+# List tmux sessions
+tmux list-sessions
 
 # Pull just the summary line from the last report
 sudo grep -A5 "^Summary:" /var/log/aide/aide.log
