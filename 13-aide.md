@@ -329,6 +329,8 @@ sudo tee /etc/aide/aide.conf.d/31_aide_pkg_mgmt_cache > /dev/null << 'EOF'
 !/var/lib/apt/periodic/.*$
 !/var/lib/unattended-upgrades/kept-back$
 !/var/lib/systemd/timers/stamp-.*$
+!/var/backups/dpkg\.arch$
+!/var/backups/dpkg\.arch\.[0-9]+(\.gz)?$
 EOF
 ```
 
@@ -347,6 +349,15 @@ sudo tee /etc/aide/aide.conf.d/31_aide_live_logs_only > /dev/null << 'EOF'
 !/var/log/unattended-upgrades/unattended-upgrades-dpkg\.log$
 !/var/log/lynis\.log$
 !/var/log/lynis-report\.dat$
+EOF
+```
+
+`msmtp.log` was added in a follow-up pass once it was confirmed to have no logrotate config
+(`/etc/logrotate.d/` — checked, absent), so it grows unbounded and the live-only exclusion applies
+the same way:
+
+```bash
+sudo tee -a /etc/aide/aide.conf.d/31_aide_live_logs_only > /dev/null << 'EOF'
 !/var/log/msmtp\.log$
 EOF
 ```
