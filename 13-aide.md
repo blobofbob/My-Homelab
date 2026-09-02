@@ -77,6 +77,19 @@ A count roughly matching the number of files actually in that path confirms ever
 being correctly rejected — direct evidence from AIDE's own decision log, not an inference from
 report counts.
 
+> **Critical limitation: `--limit`/`--log-level=rule` verification only proves a new exclusion is
+> written correctly — it does NOT remove an already-tracked entry from the live database.** 
+> This tool writes to a scratch file (`aide.db.new`), never to the real `aide.db`, which
+> is exactly why it's safe to run anytime. But that safety has a cost: if a path was already tracked
+> by a previous `aideinit` *before* the new exclusion fragment existed, the live database still holds
+> that old entry — and the exclusion, however correctly written, cannot stop a **check** from
+> comparing the current filesystem state against that stale tracked entry. The path will keep
+> showing up as "Changed" in every report until an actual `aideinit` runs. Confirmed on this system:
+> a `dpkg.arch.0` exclusion traced clean (`do NOT add`) days after being added, yet kept appearing as
+> Changed in nightly reports — because the entry had been tracked during an earlier reinit, before
+> the exclusion was written. **Any newly-written exclusion for a path that might already be tracked
+> needs a real reinit to fully take effect, not just a clean `--limit` trace.**
+
 > **A second use for this trace, beyond confirming exclusions: confirming inclusions.** The same
 > `--limit`/`--log-level=rule` method works in reverse — pointed at a path you want to be *sure* is
 > still watched (not excluded by an overly broad regex), it prints `ADD` verdicts instead of
@@ -379,6 +392,20 @@ tampered with; cheap to keep watched given what it sits downstream of), `/home/*
 shell/tool config files (deliberately watched — a homelab-specific choice to prioritize catching
 unusual account activity over reducing noise, at the cost of a "changed" entry every session).
 
+> **`/var/lib/tailscale/certs/*.crt` and `*.key` — the TLS certificate and private key backing
+> every Tailscale Serve endpoint (OpenClaw, n8n, Vaultwarden, Pi-hole admin) — are also deliberately
+> never excluded, same tier as the Tor hidden service key.** Unlike the Tor key, these *are*
+> expected to change periodically — Tailscale auto-renews the certificate roughly every 90 days —
+> so a change here is routine, not automatically alarming. But routine renewal should still be
+> verified, not assumed, the same way Tor key changes are: confirm the new certificate's actual
+> validity window rather than waving it through on pattern alone:
+> ```bash
+> sudo openssl x509 -in /var/lib/tailscale/certs/YOUR_MAGICDNS_HOSTNAME.crt -noout -dates
+> ```
+> A `notBefore` date that lines up with recent activity confirms routine renewal. A `notBefore`
+> date that predates any known renewal event, or a change with no corresponding cert-file rewrite,
+> would be the actual red flag worth investigating.
+
 **Validate everything before initializing** (fast syntax check, no filesystem scan):
 
 ```bash
@@ -454,6 +481,15 @@ sudo tail -5 /var/log/aide/aideinit.log
 ```
 
 Looking for `AIDE --init return code 0`.
+
+> **Before starting a repeat reinit** (e.g. after pulling new Docker images, or any other
+> legitimate change worth folding into a fresh baseline), confirm the previous `tmux` session has
+> actually exited — the session name is reused every time, and `tmux new-session -d -s aideinit ...`
+> fails with a duplicate-session error rather than queuing up if the old one is still around:
+> ```bash
+> tmux list-sessions
+> ```
+> If `aideinit` isn't listed, it's clear to start the next one.
 
 ---
 
