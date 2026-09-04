@@ -122,6 +122,7 @@ Quick-access tables for every guide. All port numbers, file paths, and sources l
 | `/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml` | Firewall bouncer config, incl. `iptables_chains` |
 | `/etc/crowdsec/notifications/email.yaml` | CrowdSec email notification plugin |
 | `/etc/crowdsec/profiles.yaml` | Wires notification plugins to remediation decisions |
+| `/etc/systemd/system/crowdsec-hubupdate.service.d/override.conf` | Fixes the Hub update timer's boot-race with network readiness |
  
 ---
  

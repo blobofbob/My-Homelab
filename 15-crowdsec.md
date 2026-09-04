@@ -261,6 +261,62 @@ isn't a problem on its own — it just means nothing currently on the shared lis
 
 ---
 
+## Hub update timer — boot race
+
+`crowdsec-hubupdate.timer` runs daily via `OnCalendar=daily`, and on this Pi that lands right at
+boot (a nightly reboot happens — cause still under separate investigation, not a CrowdSec issue).
+That made every trigger effectively a boot-time trigger, and the upstream unit
+(`/usr/lib/systemd/system/crowdsec-hubupdate.service`) has no network-readiness ordering at all —
+it starts whenever systemd gets to it in the boot sequence, race or no race.
+
+Confirmed on this system: the service started in the exact same second
+`NetworkManager-wait-online.service` began, before DNS was actually reachable, and failed:
+
+```
+Aug 22 00:00:39 raspberrypi systemd[1]: Starting crowdsec-hubupdate.service...
+Aug 22 00:00:45 raspberrypi hubupdate.sh[684]: Error: cscli hub update: unable to retrieve latest crowdsec version: unable to send request to https://version.crowdsec.net/latest: Get "https://version.crowdsec.net/latest": dial tcp: lookup version.crowdsec.net on 1.1.1.1:53: dial udp 1.1.1.1:53: connect: network is unreachable
+Aug 22 00:00:45 raspberrypi systemd[1]: crowdsec-hubupdate.service: Main process exited, code=exited, status=1/FAILURE
+```
+
+**Impact:** live detection (ban decisions, the CAPI community blocklist) is unaffected — that's a
+separate mechanism from Hub updates. But Hub scenario/signature data silently stops refreshing when
+this fails, so new or updated detection scenarios from the Hub aren't being pulled in until it's
+fixed.
+
+Fix via drop-in — never edit the shipped unit directly, same convention as everywhere else in this
+project:
+
+```bash
+sudo mkdir -p /etc/systemd/system/crowdsec-hubupdate.service.d
+sudo tee /etc/systemd/system/crowdsec-hubupdate.service.d/override.conf > /dev/null << 'EOF'
+[Unit]
+After=network-online.target
+Wants=network-online.target
+EOF
+sudo systemctl daemon-reload
+```
+
+This only works if something on the system actually provides `network-online.target` — check before
+assuming the drop-in has any effect. On this Pi that's NetworkManager, not `systemd-networkd`:
+
+```bash
+systemctl is-enabled NetworkManager-wait-online.service
+```
+
+If that shows `disabled` (or the equivalent for whatever manages networking on your system isn't
+enabled), enable it, or the drop-in adds an ordering dependency on a target nothing ever fires.
+
+**Verified fix** — before the drop-in, the service started the same second as
+`NetworkManager-wait-online` and failed. After, it started 33 seconds after boot, comfortably behind
+network readiness, and succeeded:
+
+```
+Aug 26 00:01:18 raspberrypi systemd[1]: Starting crowdsec-hubupdate.service - CrowdSec Hub update...
+Aug 26 00:01:26 raspberrypi systemd[1]: Finished crowdsec-hubupdate.service - CrowdSec Hub update.
+```
+
+---
+
 ## Useful commands
 
 ```bash
@@ -315,6 +371,18 @@ Don't assume either way — check directly:
 ```bash
 sudo iptables -L INPUT -n --line-numbers | grep -i crowdsec
 ```
+
+**Hub scenarios seem stale / haven't updated in a while**
+
+Check `crowdsec-hubupdate.service`'s recent runs for the boot-race failure pattern (`network is
+unreachable` right at boot):
+
+```bash
+journalctl -u crowdsec-hubupdate.service --no-pager
+```
+
+If that shows `network is unreachable` errors landing in the same second as boot, see
+[Hub update timer — boot race](#hub-update-timer--boot-race) above.
 
 ---
 
