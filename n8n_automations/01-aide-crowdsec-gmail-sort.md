@@ -1,4 +1,6 @@
 # 01 — AIDE/CrowdSec Gmail Sort
+Welcome to the first n8n automation guide of this series. these are completely optional and might not even be useful to you if you 
+dont have the mentioned services installed.
 
 An n8n workflow that watches the inbox for AIDE and CrowdSec notification emails, labels each by
 source, and archives them out of the inbox — AIDE mail stays marked **unread** as a quick visual
